@@ -16,74 +16,79 @@
             height: 100%;
         }
         .leaflet-top.leaflet-left {
-            padding: 10px;
+            padding: 40px;
         }
         #opacity-slider {
-            width: 150px;
+            width: 100px;
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
     
-    <script>
-        // Shifting the latitude 1/2 mile to the south
-        var latitude = 33.78800672400097 - (1/2) / 69;
-        var longitude = -84.37247933915121;
+ <script>
+    var latitude = 33.769046;
+    var longitude = -84.374100;
 
-        // Set initial zoom level to 12
-        var map = L.map('map', {
-            zoomControl: false // Disable default zoom control
-        }).setView([latitude, longitude], 12);
+    // Create the map
+    var map = L.map('map', {
+        zoomControl: false // Disable default zoom control
+    }).setView([latitude, longitude], 12);
 
-        // Adding OpenStreetMap as base layer
-        var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        });
+    // Add zoom controls manually
+    L.control.zoom({position: 'topright'}).addTo(map);
 
-        // Adding Satellite view as another base layer
-        var satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-            attribution: '&copy; <a href="https://www.google.com/maps">Google Maps</a>',
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-        }).addTo(map); // Adding this layer by default
+    // Base Layers
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+    
+    // Overlay Layers
+    var kauffmanAtlanta1921 = L.tileLayer('https://mapwarper.net/maps/tile/74063/{z}/{x}/{y}.png', {opacity: 1});
+    var summerhillSanborn1911 = L.tileLayer('https://mapwarper.net/maps/tile/74064/{z}/{x}/{y}.png');
+    var auburnAve1949 = L.tileLayer('https://mapwarper.net/maps/tile/5034/{z}/{x}/{y}.png');
+    
+    osm.addTo(map);
+    kauffmanAtlanta1921.addTo(map); // Default overlay layer
 
-        // Adding Kauffman Atlanta 1921 overlay (visible by default)
-        var kauffmanOverlay = L.tileLayer('https://mapwarper.net/maps/tile/74063/{z}/{x}/{y}.png').addTo(map);
+    // Add Toggle Buttons for the Overlays with 2x height
+    var overlayToggleButtons = L.control({position: 'bottomleft'});
+    overlayToggleButtons.onAdd = function(map) {
+        var div = L.DomUtil.create('div', 'info');
+        div.innerHTML = '<button id="toggle-kauffman" style="height: 4em;">Kauffman (On)</button><br>' +
+                        '<button id="toggle-summerhill" style="height: 4em;">Summerhill Sanborn 1911 (Off)</button><br>' +
+                        '<button id="toggle-auburn" style="height: 4em;">Auburn Ave 1949 (Off)</button>';
+        return div;
+    };
+    overlayToggleButtons.addTo(map);
 
-        // Adding two additional overlays (not visible by default)
-        var additionalOverlay1 = L.tileLayer('https://mapwarper.net/maps/tile/74064/{z}/{x}/{y}.png');
-        var additionalOverlay2 = L.tileLayer('https://mapwarper.net/maps/tile/5034/{z}/{x}/{y}.png');
+    // Toggle function
+    function toggleOverlay(layer, buttonId, name) {
+        var button = document.getElementById(buttonId);
+        if (map.hasLayer(layer)) {
+            map.removeLayer(layer);
+            button.innerHTML = name + ' (Off)';
+        } else {
+            layer.addTo(map);
+            button.innerHTML = name + ' (On)';
+        }
+    }
 
-        // Adding layer control
-        var baseMaps = {
-            "OpenStreetMap": osmLayer,
-            "Satellite View": satelliteLayer
-        };
+    document.getElementById('toggle-kauffman').addEventListener('click', function() {
+        toggleOverlay(kauffmanAtlanta1921, 'toggle-kauffman', 'Kauffman');
+    });
 
-        var overlayMaps = {
-            "Kauffman Atlanta 1921": kauffmanOverlay,
-            "Additional Map 1": additionalOverlay1,
-            "Additional Map 2": additionalOverlay2
-        };
+    document.getElementById('toggle-summerhill').addEventListener('click', function() {
+        toggleOverlay(summerhillSanborn1911, 'toggle-summerhill', 'Summerhill Sanborn 1911');
+    });
 
-        L.control.layers(baseMaps, overlayMaps).addTo(map);
+    document.getElementById('toggle-auburn').addEventListener('click', function() {
+        toggleOverlay(auburnAve1949, 'toggle-auburn', 'Auburn Ave 1949');
+    });
+</script>
 
-        // Add a new zoom control at the top left corner
-        L.control.zoom({ position: 'topleft' }).addTo(map);
 
-        // Add an opacity slider
-        var slider = L.control({ position: 'topleft' });
-        slider.onAdd = function (map) {
-            var div = L.DomUtil.create('div', 'info');
-            div.innerHTML += '<label>Overlay Opacity: <input id="opacity-slider" type="range" min="0" max="1" step="0.1" value="1"></label>';
-            return div;
-        };
-        slider.addTo(map);
 
-        // Listen to the slider's change event to update the overlay's opacity
-        document.getElementById('opacity-slider').addEventListener('input', function() {
-            kauffmanOverlay.setOpacity(this.value);
-        });
-    </script>
+
+
 </body>
 </html>
